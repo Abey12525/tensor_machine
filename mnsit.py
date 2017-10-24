@@ -10,6 +10,7 @@ Created on Fri Aug 18 23:58:58 2017
 import tensorflow as tf 
 import sys
 import os 
+import math as m
 import argparse
 import random as ran
 from matplotlib import pyplot as plt
@@ -21,7 +22,8 @@ from tensorflow.examples.tutorials.mnist import mnist
 #creating a local folder
 mnist=input_data.read_data_sets("./data/", one_hot=True)
 
-"""with tf.Session() as sess:
+"""
+with tf.Session() as sess:
     #access first image
     for i in range(100):
         first_image = mnist.train.images[0]
@@ -29,9 +31,8 @@ mnist=input_data.read_data_sets("./data/", one_hot=True)
         pixels = first_image.reshape((28, 28))
         plt.imshow(pixels, cmap='gray')
         print(i)
-   """     
+"""     
 
-#
 def TRAIN_SIZE(num):
     print ('Total Training Images in Dataset = ' + str(mnist.train.images.shape))
     print ('--------------------------------------------------')
@@ -41,7 +42,6 @@ def TRAIN_SIZE(num):
     print ('y_train Examples Loaded = ' + str(y_train.shape))
     print('')
     return x_train, y_train
-
 
 def TEST_SIZE(num):
     print ('Total Test Examples in Dataset = ' + str(mnist.test.images.shape))
@@ -82,34 +82,80 @@ def display_compare(num):
     plt.show()
 
     
-x_train,y_train=TRAIN_SIZE(55000)
-x_test,y_test=TEST_SIZE(1000)  
-learning_rate =0.1
-train_steps = 100 
+#x_train,y_train=TRAIN_SIZE(55000)
+#x_test,y_test=TEST_SIZE(1000)  
+#learning_rate =0.1
+#train_steps = 100 
+
 """weight adjustment """
-def trainingi(x_train,t_target,a):
-    w=1.2
-    b=0
-    temp = 1
-    while(True):
-        w = w + a*x_train*t_target
-        b = b + a*t_target
-        if ( temp - w == 0):
-            break
-        temp = w
-        
+def softmax(x=[],*args):
+    ip=0
+    for i in range(10):
+        ip=ip+x[i]
+    for i in range(10):
+        x[i]=m.exp(x[i])/m.exp(ip)
+    return x
+
+
+def prd(to=[],*args):
+    lrg=to[0]
+    idx=0
+    for i in range(1,len(to)):
+        print(to[i])
+        if(lrg<to[i]):
+            idx=i
+            lrg=to[i]
+    return idx
+  
+def tr_mnist(lr,x=[],t=[],*args):
+    z=tf.zeros([10])
+    #x=tf.placeholder([None,728])
+    W = tf.Variable(tf.zeros([784,10]))
+    B = tf.Variable(tf.zeros([10]))
+    init = tf.global_variables_initializer()
+    sess=tf.Session()
+    sess.run(init)
+    w=sess.run(W)
+    b=sess.run(B)
+    zw=sess.run(z)
+    for i in range(784):
+        for n in range(10):
+            #WiXi calculation
+            zw[n]=zw[n]+ w[i][n]*x[:,i]
+            #y = WiXi + b
+    for j in range(10):
+         zw[j]=zw[j]+b[j]
+    #activation function 
+    to=softmax(zw)
+    #idx=prd(to)
+    #print(idx)
+    #weight updation
+    er=np.zeros([10])
+    for k in range(10):
+        er[k]=(t[0][k]-to[k])
+    for j in range(784):
+        for i in range(0,10):
+            w[j][i]=lr*er[i]*x[:,j]
+    idx=prd(er)
+    for i in range(10):
+        if(idx==i):
+            print(" prediction :",i)
+    
+            
+x = (mnist.train.images[:1,:])
+y = (mnist.train.labels[:1,:])
+             
+tr_mnist(0.1,x,y)
+
+#print(we)       
 #for i in range(0):        
-sess = tf.Session()
-x=tf.placeholder(tf.float32,shape=[None,784])
-y_=tf.placeholder(tf.float32,shape=[None,10])
+#sess = tf.Session()
+#x=tf.placeholder(tf.float32,shape=[None,784])
+#y_=tf.placeholder(tf.float32,shape=[None,10])
 #weight and bias initailzing 
 
-
-W = tf.Variable(tf.zeros([784,10]))
-b = tf.Variable(tf.zeros([10]))
-
 #activation of output from y = b + w*x
-y = tf.nn.softmax(tf.matmul(x,W) + b)
+#y = tf.nn.softmax(tf.matmul(x,W) + b)
 #the error calculation and adjust of weight and bias
 #according to it's softmax activation and comparing
 #the result with closeness to 0 or 1 
@@ -120,15 +166,15 @@ y = tf.nn.softmax(tf.matmul(x,W) + b)
 #  not actual results [.001,.9,.2]
 #applying corss entorpy we get
 #[-.0046,.91,-.26]
-cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y), reduction_indices=[1]))
+#cross_entropy = tf.reduce_mean(-tf.reduce_sum(y_ * tf.log(y), reduction_indices=[1]))
 
-init = tf.global_variables_initializer()
-sess.run(init)
+#init = tf.global_variables_initializer()
+#sess.run(init)
 #gradient descent is used to minimize the lose ie cross_entropy
 #more accuracy
-training = tf.train.GradientDescentOptimizer(learning_rate).minimize(cross_entropy)
-correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+#training = tf.train.GradientDescentOptimizer(learning_rate).minimize(cross_entropy)
+#correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
+#accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 """
 for i in range(train_steps+1):
     sess.run(training, feed_dict={x: x_train, y_: y_train})
@@ -147,26 +193,23 @@ frame1.axes.get_xaxis().set_visible(False)
 frame1.axes.get_yaxis().set_visible(False)
 
 plt.show()"""
-
-x_train = (mnist.train.images[:1,:])
-print(x_train)
-ne=x_train.reshape([28,28])
-plt.imshow(ne,cmap=plt.get_cmap('flag_r'))
-plt.show()
-for i in range(783):
-    x_train[0][i]=(x_train[0][i])+20
-    
-print(x_train)
-ne=x_train.reshape([28,28])
-plt.imshow(ne,cmap=plt.get_cmap('flag_r'))
-plt.show()
-#print(x_train[1])"""
-"""for i in x_train:
-    if i==0:
-        x_train(i)=x_train([:1,:])*0.003
-    else:
-        x_train(i)=x_train([i-1:i,:])*0.1
 """
+x_train = (mnist.train.images[:1,:])
+#print(x_train)
+
+ne=x_train.reshape([28,28])
+plt.imshow(ne,cmap=plt.get_cmap('flag_r'))
+plt.show()
+
+for i in range(783):
+    if(x_train[0][i] > 0):
+        x_train[0][i]=1;
+    
+ne=x_train.reshape([28,28])
+plt.imshow(ne,cmap=plt.get_cmap('flag_r'))
+plt.show()
+
+#print(x_train[1])"""
 #print(ne)
 #display_compare(ran.randint(0, 55000))
 
